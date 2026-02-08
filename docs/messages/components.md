@@ -1,41 +1,22 @@
 ---
-category: messages
+title: 消息组件平台兼容性更新 (v4.14.6)
+type: improvement
+status: stable
+last_updated: 2026-02-08
+related_base: messages/components.md
 ---
 
-# 消息链组件 (Message Components)
+## 概述
+在 v4.14.6 版本中，飞书 (Lark) 平台适配器完成了对核心多媒体组件的对齐，增强了插件在生产力工具场景下的表现力。
 
-AstrBot 使用消息链（MessageChain）来描述消息结构，它是一个由多个消息段（MessagePart/Component）组成的有序列表。
+## 变更详情
+飞书适配器现已支持以下 `MessageComponent` 的下行发送：
+- **`Image`**: 支持通过 `Image.fromFileSystem(path)` 与 `Image.fromURL(url)` 发送图片。
+- **`Video`**: 支持通过 `Video.fromFileSystem(path)` 与 `Video.fromURL(url)` 发送视频消息。
+- **`File`**: 支持通过 `File.fromFileSystem(path, name)` 发送文件。
 
-### 核心组件及其兼容性
-
-| 组件类型 | 描述 | 参数示例 | 平台兼容性建议 |
-| :--- | :--- | :--- | :--- |
-| `Plain` | 纯文本 | `text="Hello"` | 所有平台支持。 |
-| `At` | 提及/艾特 | `user_id="xxx"` | 大多数平台支持。 |
-| `Image` | 图片 | `fromFileSystem(path)`, `fromURL(url)` | 所有平台支持。URL 必须以 `http` 或 `https` 开头。 |
-| `Record` | 语音 | `file="path/to/wav"` | 广泛支持。目前主要支持 `wav` 格式。 |
-| `Video` | 视频 | `fromFileSystem(path)`, `fromURL(url)` | 广泛支持。常用格式为 `mp4` |
-| `File` | 文件 | `file="path"`, `name="a.txt"` | 部分平台不支持。 |
-| `Face` | 表情 | `id="123"` | 主要在 OneBot v11 (QQ) 平台支持。 |
-| `Node/Nodes` | 合并转发节点 | `uin`, `name`, `content` | 仅 OneBot v11 支持。 |
-| `Poke` | 戳一戳 | - | 主要在 OneBot v11 支持。 |
-| `Reply` | 回复特定消息 | `message_id="xxx"` | 广泛支持。 |
-
-### 消息构建示例
-
-```python
-import astrbot.api.message_components as Comp
-
-# 方式 1：手动构建列表
-chain = [
-    Comp.At(user_id=event.get_sender_id()),
-    Comp.Plain(" 来看这张图："),
-    Comp.Image.fromURL("https://example.com/image.jpg")
-]
-yield event.chain_result(chain)
-
-# 方式 2：使用 MessageChain 流式构建
-from astrbot.api.event import MessageChain
-message_chain = MessageChain().message("Hello!").file_image("path/to/image.jpg")
-await self.context.send_message(event.unified_msg_origin, message_chain)
-```
+## 变更影响分析
+1. **逻辑简化**: 开发者在构建 `MessageChain` 时，可以减少针对飞书平台的条件分支逻辑（如以往可能需要将文件转为 HTTP 链接），实现更纯粹的“一次编写，到处运行”。
+2. **功能对齐**: 飞书平台在多媒体处理能力上已与 OneBot (QQ) 和 Telegram 等主流适配器对齐，适合开发文档分发、视频摘要或图像生成类插件。
+3. **最佳实践**: 尽管适配器已支持组件，AI 开发者在设计插件时仍应考虑飞书平台对文件上传大小的潜在限制（通常由平台 API 决定），建议对超大文件保留链接回退机制。
+4. **会话性能**: 配合核心对 WebChat 和企业微信会话队列的生命周期优化，多媒体消息的并发发送稳定性得到了进一步提升。
