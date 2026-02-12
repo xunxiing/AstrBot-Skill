@@ -2,32 +2,36 @@
 title: 消息事件 (AstrMessageEvent)
 type: improvement
 status: stable
-last_updated: 2024-05-22
+last_updated: 2025-02-12
 related_base: messages/events.md
 ---
 
 ## 概述
-`AstrMessageEvent` 是插件处理逻辑的核心上下文对象。在最新版本中，该对象的会话标识属性（`session_id` 与 `unified_msg_origin`）已重构为基于 `MessageSession` 对象的动态属性（Property），增强了会话管理的一致性。
+`AstrMessageEvent` 是插件处理逻辑的核心上下文对象。除了会话标识管理外，现已引入原生状态反馈机制，允许机器人向用户发送“正在输入”或“正在上传”的视觉提示。
 
-## 核心属性与 Setter 契约
+## 核心属性与方法
 
-这些属性现在不仅支持读取，还支持通过 Setter 进行动态修改，且修改会自动同步到底层的 `MessageSession` 状态：
+### 1. 状态反馈 API
+- **`await event.send_typing()`**:
+    - **功能**: 触发平台侧的“正在输入”或“正在处理”状态指示器。
+    - **自动触发**: 在核心流水线的 `agent_sub_stages` 中，系统会在发起 LLM 请求前自动调用此方法，以降低用户的感知延迟。
+    - **平台适配**: 这是一个虚方法，由具体平台适配器（如 Telegram）实现。若平台不支持，则静默忽略。
 
-- **`event.unified_msg_origin` (UMO)**:
-    - **Getter**: 返回格式为 `platform_name:message_type:session_id` 的统一标识符。
-    - **Setter**: 允许通过赋值 UMO 字符串来重置事件的会话上下文。内部通过 `MessageSession.from_str(value)` 重新解析并覆盖当前 session 对象。
-- **`event.session_id`**:
-    - **Getter**: 获取当前会话的唯一 ID。
-    - **Setter**: 直接修改当前会话 ID，此变更会立即反映在 `unified_msg_origin` 的输出中。
+### 2. 核心属性 (Property)
+- **`event.unified_msg_origin` (UMO)**: 统一会话标识符，支持 Getter/Setter 以实现动态会话切换。
+- **`event.session_id`**: 当前会话的唯一 ID。
 
-## 内部实现逻辑
-
-`AstrMessageEvent` 不再在 `__init__` 中静态存储 `session_id` 和 `unified_msg_origin` 字符串，而是统一维护一个 `self.session` (`MessageSession` 类实例)。
-- **初始化**: 修正了 `MessageSession` 的拼写错误并确保其在事件创建时被正确初始化。
-- **响应式更新**: 通过 Python `@property` 装饰器，确保了 UMO 和 Session ID 始终指向同一个数据源，消除了状态不一致的风险。
+## 平台实现细节 (以 Telegram 为例)
+Telegram 适配器对 `send_typing` 进行了深度集成，支持根据消息链内容自动切换状态：
+- **状态映射**: 
+    - `Plain` -> `typing` (正在输入)
+    - `Image` -> `upload_photo` (正在上传图片)
+    - `Record` -> `upload_voice` (正在上传语音)
+    - `File` -> `upload_document` (正在上传文件)
+- **流式节流 (Throttling)**: 在 `send_streaming` 模式下，系统以 0.5 秒为间隔节流发送状态更新，确保在长文本生成期间状态不中断，同时避免触发 Telegram 的频率限制 (Rate Limit)。
 
 ## 变更影响分析
 
-1. **动态会话切换**: 插件开发者现在可以在事件处理过程中，通过修改 `event.unified_msg_origin` 动态地将事件“重定向”到另一个会话上下文。这对于实现跨群指令触发或会话劫持逻辑至关重要。
-2. **副作用警示**: 修改 `unified_msg_origin` 会导致底层的 `platform_name` 和 `message_type` 同时发生变化。如果仅需修改用户 ID，应优先使用 `event.session_id` 的 setter。
-3. **最佳实践**: 在编写需要持久化或比对会话的逻辑时，应始终依赖 `event.unified_msg_origin` 属性，因为它现在是经过 `MessageSession` 校验的权威来源。
+- **感知延迟优化**: AI 开发者现在可以依赖系统自动触发的 `send_typing` 来提升 UX，无需在插件逻辑中手动实现“正在思考”的文字回复。
+- **适配器开发契约**: 适配器作者应重写 `send_typing` 方法。在处理媒体文件发送时，建议遵循 `发送上传状态 -> 执行发送 -> 恢复输入状态` 的模式（参考 `_send_media_with_action` 逻辑）。
+- **流式输出边界**: 在流式传输过程中，状态反馈会自动与消息编辑逻辑同步。开发者若自定义流式生成器，应注意状态反馈的节流时间，避免高频调用导致平台封禁。
