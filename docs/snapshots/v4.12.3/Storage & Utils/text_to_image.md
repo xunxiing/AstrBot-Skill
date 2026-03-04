@@ -1,51 +1,109 @@
-# 文转图 (Text to Image)
+﻿# 文转图 (Text to Image)
 
-## 基本
+将文本或 HTML 模板渲染为图片。
 
-AstrBot 支持将文字渲染成图片。
+## 插件方法（Star）
+
+### `text_to_image`
 
 ```python
-@filter.command("image")  # 注册一个 /image 指令，接收 text 参数。
-async def on_aiocqhttp(self, event: AstrMessageEvent, text: str):
-    url = await self.text_to_image(text)  # text_to_image() 是 Star 类的一个方法。
-    # path = await self.text_to_image(text, return_url = False)  # 如果你想保存图片到本地
-    yield event.image_result(url)
+async def text_to_image(self, text: str, return_url: bool = True) -> str
 ```
 
-
-AstrBot 支持使用 HTML + Jinja2 的方式来渲染文转图模板。
+- 内部调用：`html_renderer.render_t2i(...)`
+- 使用当前激活模板：`t2i_active_template`
+- `return_url=True` 返回可发送的 URL；`False` 返回本地文件路径
+- **网络渲染失败会自动 fallback 到本地渲染**
 
 ```python
-# 自定义的 Jinja2 模板，支持 CSS
-TMPL = """
-<div style="font-size: 32px;">
-    <h1 style="color: black">Todo List</h1>
-    <ul>
-        {% for item in items %}
-            <li>{{ item }}</li>
-        {% endfor %}
-    </ul>
+url = await self.text_to_image("你好，AstrBot")
+yield event.image_result(url)
+```
+
+### `html_render`
+
+```python
+async def html_render(self, tmpl: str, data: dict, return_url: bool = True, options: dict | None = None) -> str
+```
+
+- 内部调用：`html_renderer.render_custom_template(...)`
+- 适合自定义 HTML + Jinja2 模板渲染
+
+```python
+tmpl = """
+<div style='font-size:28px'>
+  <h1>{{ title }}</h1>
+  <ul>{% for i in items %}<li>{{ i }}</li>{% endfor %}</ul>
 </div>
 """
-
-@filter.command("todo")
-async def custom_t2i_tmpl(self, event: AstrMessageEvent):
-    options = {}  # 可选择传入渲染选项。
-    url = await self.html_render(TMPL, {"items": ["吃饭", "睡觉", "玩原神"]}, options=options)  # 第二个参数是 Jinja2 的渲染数据
-    yield event.image_result(url)
+url = await self.html_render(tmpl, {"title": "Todo", "items": ["吃饭", "睡觉"]})
+yield event.image_result(url)
 ```
 
-## 图片渲染选项
+## SDK 方法（`html_renderer`）
 
-参考 Playwright 的 screenshot API。
+```python
+from astrbot.api import html_renderer
+```
 
-- `timeout` (float, optional)
-- `type` (Literal["jpeg", "png"], optional):
-- `quality` (int, optional): 截图质量，仅适用于 JPEG
-- `omit_background` (bool, optional): 是否允许隐藏默认的白色背景，这样就可以截透明图了，仅适用于 PNG 格式。
-- `full_page` (bool, optional)
-- `clip` (dict, optional): 截图后裁切的区域。参考 Playwright screenshot API。
-- `animations`: (Literal["allow", "disabled"], optional): 是否允许播放 CSS 动画。
-- `caret`: (Literal["hide", "initial"], optional): 当设置为 hide 时，截图时将隐藏文本插入符号，默认为 hide。
-- `scale`: (Literal["css", "device"], optional): 页面缩放设置。
+### 初始化
 
+```python
+await html_renderer.initialize()
+```
+
+### 默认文转图
+
+```python
+await html_renderer.render_t2i(
+    text: str,
+    use_network: bool = True,
+    return_url: bool = False,
+    template_name: str | None = None,
+)
+```
+
+- `use_network=True` 先走网络渲染；失败时 fallback 到本地渲染
+- `return_url=False` 时返回本地路径
+
+### 自定义模板渲染
+
+```python
+await html_renderer.render_custom_template(
+    tmpl_str: str,
+    tmpl_data: dict,
+    return_url: bool = False,
+    options: dict | None = None,
+)
+```
+
+## 渲染选项（`html_render` / `render_custom_template`）
+
+`options` 透传给截图参数（Playwright 风格）：
+
+- `timeout`
+- `type`: `"jpeg" | "png"`
+- `quality`（仅 jpeg）
+- `omit_background`（仅 png）
+- `full_page`
+- `clip`
+- `animations`: `"allow" | "disabled"`
+- `caret`: `"hide" | "initial"`
+- `scale`: `"css" | "device"`
+
+默认值（未传 `options` 时）：
+
+```python
+{"full_page": True, "type": "jpeg", "quality": 40}
+```
+
+## 模板管理方法
+
+`TemplateManager` 提供模板 CRUD：
+
+- `list_templates()`
+- `get_template(name)`
+- `create_template(name, content)`
+- `update_template(name, content)`
+- `delete_template(name)`
+- `reset_default_template()`

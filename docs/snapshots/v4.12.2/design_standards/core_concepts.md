@@ -56,13 +56,12 @@
 
 ### 5. 系统钩子 (Hooks)
 
-- `@filter.on_astrbot_loaded()`: Bot 加载完成。
-- `@filter.on_waiting_llm_request()`: 等待 LLM 请求（获取锁前）。
-- `@filter.on_llm_request()`: LLM 请求前（可修改请求体）。
-- `@filter.on_llm_response()`: LLM 返回后（可修改返回体）。
-- `@filter.on_decorating_result()`: 结果发送前（可进行文转图等修饰）。
-- `@filter.after_message_sent()`: 消息发送成功后。
+Hooks 分为两层，不建议在“概念清单”里重复列举具体 hook 名单（容易过时）：
+
+- 插件事件钩子（`@filter.on_*`）：见 `docs/plugin_config/hooks.md`
+- Agent 运行钩子（`BaseAgentRunHooks`）：见 `docs/agent/agent-related-hooks.md`
 
 ### 6. Agent 智能体
 
-- `context.tool_loop_agent(event, chat_provider_id, prompt, tools, max_steps, tool_call_timeout, system_prompt)`: 调用 Agent 和mutiagent
+- Agent 相关能力（tools / providers / persona / sandbox / cron / subagents）：见 `docs/agent/`
+- `context.tool_loop_agent(...)`: 调用工具循环 Agent（可结合子智能体 handoff）
