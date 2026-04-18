@@ -134,7 +134,6 @@ export default defineConfig({
       { text: "消息模型", link: "/messages/model" },
       { text: "插件配置", link: "/plugin_config/schema" },
       { text: "平台适配", link: "/platform_adapters/adapter_interface" },
-      { text: "快照", link: "/snapshots/" },
     ],
     sidebar: buildSidebar(),
   },

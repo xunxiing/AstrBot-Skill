@@ -115,7 +115,7 @@ result.txt
 /workspace/result.txt
 ```
 
-沙盒部署、profile、TTL、数据持久化、浏览器能力等内容请参考：[Agent 沙盒环境](/use/astrbot-agent-sandbox)。
+沙盒部署、profile、TTL、数据持久化、浏览器能力等内容请参考：[Agent 沙盒环境](/agent/sandbox)。
 
 > [!NOTE]
 > 即使在 `sandbox` 模式下，“需要 AstrBot 管理员权限”仍会影响 Shell、Python、浏览器、上传下载等工具的调用权限。具体权限取决于你的配置。
@@ -134,4 +134,4 @@ Skills 是给 Agent 使用的“任务说明书”，通常存放在 `data/skill
 在 `local` 模式下，Agent 会读取本地 Skills。
 在 `sandbox` 模式下，AstrBot 会尝试把本地 Skills 同步到沙盒中，让 Agent 在沙盒内按 Skill 指令执行。
 
-更多内容请参考：[技能 Skills](/use/skills)。
+更多内容请参考：[技能 Skills](/agent/skills)。
