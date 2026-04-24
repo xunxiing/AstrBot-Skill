@@ -117,7 +117,7 @@ instead of:
 /workspace/result.txt
 ```
 
-For sandbox deployment, profiles, TTL, persistence, and browser capabilities, see [Agent Sandbox Environment](/agent/sandbox).
+For sandbox deployment, profiles, TTL, persistence, and browser capabilities, see [Agent Sandbox Environment](/en/use/astrbot-agent-sandbox).
 
 > [!NOTE]
 > Even in `sandbox` mode, `Require AstrBot admin permission` still affects access to Shell, Python, browser, upload/download, and related tools. The exact behavior depends on your configuration.
@@ -136,4 +136,4 @@ For example, a Skill may ask the Agent to read files, run scripts, and generate 
 In `local` mode, the Agent reads local Skills.
 In `sandbox` mode, AstrBot attempts to sync local Skills into the sandbox so the Agent can execute them there.
 
-For more details, see [Anthropic Skills](/agent/skills).
+For more details, see [Anthropic Skills](/en/use/skills).
