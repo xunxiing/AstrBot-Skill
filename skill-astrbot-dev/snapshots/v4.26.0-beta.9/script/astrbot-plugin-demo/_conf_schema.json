@@ -1,0 +1,20 @@
+{
+  "enable_greeting": {
+    "type": "bool",
+    "default": true,
+    "hint": "启用打招呼功能"
+  },
+  "greeting_message": {
+    "type": "string",
+    "default": "你好！我是示例插件~",
+    "hint": "打招呼时发送的消息"
+  },
+  "admin_users": {
+    "type": "list",
+    "items": {
+      "type": "string"
+    },
+    "default": [],
+    "hint": "管理员用户 ID 列表"
+  }
+}
